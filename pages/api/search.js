@@ -8,23 +8,24 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('Search query:', q);
-    console.log('adminDb:', adminDb ? 'connected' : 'null');
-    
-    const searchTerm = `%${q.toLowerCase()}%`;
-    console.log('Search term:', searchTerm);
-    
-    const { data: officials, error } = await adminDb
+    // Test: get ALL officials first
+    const { data: allOfficials, error: allError } = await adminDb
       .from('officials')
       .select('*')
-      .ilike('name', searchTerm);
+      .limit(5);
 
-    console.log('Query result:', { officials, error });
+    console.log('All officials:', allOfficials);
+    console.log('All error:', allError);
 
-    if (error) throw error;
+    if (allError) throw allError;
+
+    // Now filter locally
+    const filtered = (allOfficials || []).filter(o => 
+      o.name.toLowerCase().includes(q.toLowerCase())
+    );
 
     res.status(200).json({
-      officials: officials || [],
+      officials: filtered,
       bills: [],
       query: q,
       timestamp: new Date().toISOString()
