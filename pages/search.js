@@ -1,16 +1,3 @@
-useEffect(() => {
-  console.log('useEffect running, q =', q, 'isReady =', router.isReady);
-  
-  if (!router.isReady) return;
-  if (!q) return;
-  
-  console.log('About to fetch /api/search');
-  
-  setLoading(true);
-  setError(null);
-  // ... rest of code
-}, [router.isReady, q]);
-
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -23,48 +10,45 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  console.log('useEffect running, q =', q, 'isReady =', router.isReady);
-   if (!router.isReady) return;
-  
   useEffect(() => {
+    console.log('useEffect running, q =', q);
+    
     if (!q) return;
+    
+    console.log('Calling API with query:', q);
+    
     setLoading(true);
     setError(null);
+
     fetch(`/api/search?q=${encodeURIComponent(q)}`)
       .then(r => r.json())
       .then(data => {
+        console.log('API response:', data);
         setResults(data || { officials: [], bills: [] });
         setLoading(false);
       })
       .catch(err => {
         console.error('Search error:', err);
-        setError(err.message);
         setResults({ officials: [], bills: [] });
         setLoading(false);
       });
   }, [q]);
 
   return (
-    <main style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem' }}>
-      <Search />
+    <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+      <div style={{ position: 'relative', maxWidth: '500px', margin: '0 auto' }}>
+        <Search />
+      </div>
       <h2>Search Results for "{q}"</h2>
       {loading && <p>Loading...</p>}
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-      {!loading && !error && (results?.officials?.length || 0) === 0 && (results?.bills?.length || 0) === 0 && (
-        <p>No results found.</p>
-      )}
-      {(results?.officials?.length || 0) > 0 && (
-        <section>
-          <h3>Officials ({results.officials.length})</h3>
-          {results.officials.map(official => (
-            <Link key={official.id} href={`/officials/${official.id}`}>
-              <a style={{ display: 'block', padding: '1rem', marginBottom: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}>
-                <strong>{official.name}</strong> - {official.office_title} ({official.state_code})
-              </a>
-            </Link>
-          ))}
-        </section>
-      )}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {!loading && results.officials.length === 0 && <p>No results found.</p>}
+      {results.officials.map(official => (
+        <div key={official.id} style={{ marginBottom: '1rem', padding: '1rem', border: '1px solid #ccc' }}>
+          <h3><Link href={`/officials/${official.id}`}>{official.name}</Link></h3>
+          <p>{official.office_title} - {official.state_code}</p>
+        </div>
+      ))}
     </main>
   );
 }
