@@ -1,37 +1,60 @@
-import { publicDb } from '../../lib/db';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
+import Search from '../components/Search';
 
-export default async function handler(req, res) {
-  const { q } = req.query;
+export default function SearchPage() {
+  const router = useRouter();
+  const { q } = router.query;
+  const [results, setResults] = useState({ officials: [], bills: [] });
+  const [loading, setLoading] = useState(false);
 
-  if (!q) {
-    return res.status(400).json({ error: 'Missing query' });
-  }
+  useEffect(() => {
+    if (!q) return;
+    setLoading(true);
+    fetch(`/api/search?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(data => {
+        setResults(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Search error:', err);
+        setLoading(false);
+      });
+  }, [q]);
 
-  try {
-    const { data: officials, error: officialsError } = await publicDb
-      .from('officials')
-      .select('id, name, party, state_code, office_title')
-      .ilike('name', `%${q}%`)
-      .limit(20);
-
-    const { data: bills, error: billsError } = await publicDb
-      .from('bills')
-      .select('id, bill_number, title, status')
-      .ilike('title', `%${q}%`)
-      .limit(20);
-
-    if (officialsError || billsError) {
-      console.error('Search error:', officialsError || billsError);
-    }
-
-    res.status(200).json({
-      officials: officials || [],
-      bills: bills || [],
-      query: q,
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    console.error('Search error:', err);
-    res.status(500).json({ error: err.message });
-  }
+  return (
+    <main style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem' }}>
+      <Search />
+      <h2>Search Results for "{q}"</h2>
+      {loading && <p>Loading...</p>}
+      {!loading && results.officials.length === 0 && results.bills.length === 0 && (
+        <p>No results found.</p>
+      )}
+      {results.officials.length > 0 && (
+        <section>
+          <h3>Officials ({results.officials.length})</h3>
+          {results.officials.map(official => (
+            <Link key={official.id} href={`/officials/${official.id}`}>
+              <a style={{ display: 'block', padding: '1rem', marginBottom: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}>
+                <strong>{official.name}</strong> - {official.office_title} ({official.state_code})
+              </a>
+            </Link>
+          ))}
+        </section>
+      )}
+      {results.bills.length > 0 && (
+        <section>
+          <h3>Bills ({results.bills.length})</h3>
+          {results.bills.map(bill => (
+            <div key={bill.id} style={{ padding: '1rem', marginBottom: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}>
+              <strong>{bill.bill_number}</strong>: {bill.title}
+              <p style={{ marginTop: '0.5rem', color: '#666' }}>Status: {bill.status}</p>
+            </div>
+          ))}
+        </section>
+      )}
+    </main>
+  );
 }
