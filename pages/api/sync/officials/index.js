@@ -1,4 +1,4 @@
-import { adminDb } from '../../../lib/db';
+import { adminDb } from '../../../../lib/db';
 
 const PROPUBLICA_API = 'https://api.propublica.org/congress/v1';
 
