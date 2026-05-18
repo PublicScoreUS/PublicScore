@@ -3,41 +3,23 @@ import { adminDb } from '../../lib/db';
 export default async function handler(req, res) {
   const { q } = req.query;
 
-  if (!q || q.length < 1) {
-    return res.status(400).json({ error: 'Missing query', officials: [], bills: [] });
+  if (!q) {
+    return res.status(400).json({ error: 'Missing query' });
   }
 
   try {
-    // Test: get ALL officials first
-    const { data: allOfficials, error: allError } = await adminDb
+    const { data, error } = await adminDb
       .from('officials')
-      .select('*')
-      .limit(5);
+      .select('*');
 
-    console.log('Query result - allOfficials:', allOfficials);
-    console.log('Query result - allError:', allError);
-    console.log('Number of officials:', allOfficials?.length);
-
-    if (allError) {
-      console.error('Database error:', allError);
-      throw allError;
-    }
-
-    // Now filter locally
-    const filtered = (allOfficials || []).filter(o => 
-      o.name.toLowerCase().includes(q.toLowerCase())
-    );
-
-    console.log('Filtered results:', filtered);
+    if (error) throw error;
 
     res.status(200).json({
-      officials: filtered,
-      bills: [],
-      query: q,
-      timestamp: new Date().toISOString()
+      debug: { totalInDatabase: data?.length, query: q },
+      officials: data || [],
+      bills: []
     });
   } catch (err) {
-    console.error('Search error:', err);
-    res.status(500).json({ error: err.message, officials: [], bills: [] });
+    res.status(500).json({ error: err.message });
   }
 }
