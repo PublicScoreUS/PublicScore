@@ -1,0 +1,130 @@
+.main {
+  padding: 2rem 0;
+  background: white;
+}
+
+.hero {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.tagline {
+  font-size: 1.5rem;
+  color: var(--text-light);
+  margin-bottom: 2rem;
+}
+
+.suggestions {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--bg);
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.suggestions p {
+  margin-bottom: 0.5rem;
+  color: var(--text-light);
+}
+
+.suggestions a {
+  display: inline-block;
+  margin-right: 1rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.suggestions a:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.stats {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.statCard {
+  background: var(--bg);
+  padding: 2rem;
+  border-radius: 4px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.statNumber {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.statLabel {
+  font-size: 0.95rem;
+  color: var(--text-light);
+}
+
+.info {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+}
+
+.cta {
+  max-width: 900px;
+  margin: 3rem auto;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  background: var(--bg);
+  border-radius: 4px;
+}
+
+.cta h2 {
+  margin-bottom: 1rem;
+}
+
+.cta p {
+  margin-bottom: 1.5rem;
+  color: var(--text-light);
+}
+
+.button {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  background: var(--primary);
+  color: white;
+  border-radius: 4px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.button:hover {
+  background: var(--primary-dark);
+}
+
+@media (max-width: 768px) {
+  .hero h1 {
+    font-size: 2.25rem;
+  }
+
+  .tagline {
+    font-size: 1.25rem;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+  }
+}
