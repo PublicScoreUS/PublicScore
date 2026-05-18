@@ -1,96 +1,83 @@
-import { getOfficial, getOfficialVotes, getOfficialDonations, getDonationSummary, publicDb } from '../../lib/db';
-import Link from 'next/link';
+import { adminDb } from '../../../lib/db';
 
-export default function OfficialProfile({ official, votes, donations, summary }) {
-  if (!official) return <div>Not found</div>;
+const PROPUBLICA_API = 'https://api.propublica.org/congress/v1';
 
-  return (
-    <main style={{ maxWidth: 900, margin: '0 auto', padding: '2rem' }}>
-      <Link href="/">← Back to home</Link>
+async function fetchProPublicaMembers() {
+  const members = [];
+  
+  // Fetch Senate members
+  try {
+    const res = await fetch(`${PROPUBLICA_API}/members/senate/current.json`);
+    const data = await res.json();
+    if (data.results && data.results[0]) {
+      members.push(...data.results[0].members);
+    }
+  } catch (err) {
+    console.error('Error fetching Senate:', err);
+  }
 
-      <h1>{official.name}</h1>
-      <p><strong>{official.office_title}</strong> • {official.state_code} • {official.party}</p>
+  // Fetch House members
+  try {
+    const res = await fetch(`${PROPUBLICA_API}/members/house/current.json`);
+    const data = await res.json();
+    if (data.results && data.results[0]) {
+      members.push(...data.results[0].members);
+    }
+  } catch (err) {
+    console.error('Error fetching House:', err);
+  }
 
-      {official.bio_text && <p>{official.bio_text}</p>}
-
-      <section>
-        <h2>Recent Votes ({votes.length})</h2>
-        {votes.length === 0 ? (
-          <p>No voting records found.</p>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #333' }}>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Bill</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Vote</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {votes.map(vote => (
-                <tr key={vote.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '0.5rem' }}>{vote.bills?.title || 'N/A'}</td>
-                  <td style={{ padding: '0.5rem', textTransform: 'uppercase', fontWeight: 'bold' }}>{vote.vote_position}</td>
-                  <td style={{ padding: '0.5rem' }}>{new Date(vote.vote_date).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
-
-      <section>
-        <h2>Campaign Finance</h2>
-        <p><strong>Total Raised:</strong> ${(summary?.total / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-        {summary?.byIndustry && Object.keys(summary.byIndustry).length > 0 && (
-          <div>
-            <h3>Top Industries</h3>
-            <ul>
-              {Object.entries(summary.byIndustry)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 5)
-                .map(([industry, amount]) => (
-                  <li key={industry}>{industry}: ${(amount / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })}</li>
-                ))}
-            </ul>
-          </div>
-        )}
-      </section>
-
-      <hr />
-      <p style={{ fontSize: '0.9rem', color: '#666' }}>
-        Data sourced from ProPublica Congress API and FEC.gov. Last updated: {new Date().toLocaleDateString()}
-      </p>
-    </main>
-  );
+  return members;
 }
 
-export async function getStaticProps({ params }) {
-  const id = parseInt(params.id);
-  const official = await getOfficial(id);
-  const votes = await getOfficialVotes(id, 10);
-  const donations = await getOfficialDonations(id, 50);
-  const summary = await getDonationSummary(id);
-
+function mapProPublicaToOfficial(member) {
   return {
-    props: { official, votes, donations, summary },
-    revalidate: 86400
+    propublica_id: member.id,
+    name: `${member.first_name} ${member.last_name}`,
+    party: member.party,
+    state_code: member.state,
+    office_title: member.chamber === 'Senate' ? 'U.S. Senator' : 'U.S. Representative',
+    bio_text: member.title || '',
+    district: member.district ? member.district.toString() : null,
+    is_active: member.in_office,
+    photo_url: member.img_url || null
   };
 }
 
-export async function getStaticPaths() {
-  try {
-    const { data: officials } = await publicDb
-      .from('officials')
-      .select('id')
-      .eq('is_active', true)
-      .limit(100);
+export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-    return {
-      paths: (officials || []).map(o => ({ params: { id: o.id.toString() } })),
-      fallback: 'blocking'
-    };
-  } catch (error) {
-    return { paths: [], fallback: 'blocking' };
+  if (!adminDb) {
+    return res.status(500).json({ error: 'Database not configured' });
+  }
+
+  try {
+    console.log('Fetching ProPublica members...');
+    const members = await fetchProPublicaMembers();
+    console.log(`Fetched ${members.length} members`);
+
+    // Map to our schema
+    const officials = members.map(mapProPublicaToOfficial);
+
+    // Insert with UPSERT to avoid duplicates
+    const { data, error } = await adminDb
+      .from('officials')
+      .upsert(officials, { onConflict: 'propublica_id' });
+
+    if (error) {
+      console.error('Insert error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Synced ${officials.length} officials`,
+      count: officials.length
+    });
+  } catch (err) {
+    console.error('Sync error:', err);
+    return res.status(500).json({ error: err.message });
   }
 }
