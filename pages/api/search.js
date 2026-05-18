@@ -14,15 +14,21 @@ export default async function handler(req, res) {
       .select('*')
       .limit(5);
 
-    console.log('All officials:', allOfficials);
-    console.log('All error:', allError);
+    console.log('Query result - allOfficials:', allOfficials);
+    console.log('Query result - allError:', allError);
+    console.log('Number of officials:', allOfficials?.length);
 
-    if (allError) throw allError;
+    if (allError) {
+      console.error('Database error:', allError);
+      throw allError;
+    }
 
     // Now filter locally
     const filtered = (allOfficials || []).filter(o => 
       o.name.toLowerCase().includes(q.toLowerCase())
     );
+
+    console.log('Filtered results:', filtered);
 
     res.status(200).json({
       officials: filtered,
