@@ -8,12 +8,18 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('Search query:', q);
+    console.log('adminDb:', adminDb ? 'connected' : 'null');
+    
     const searchTerm = `%${q.toLowerCase()}%`;
+    console.log('Search term:', searchTerm);
     
     const { data: officials, error } = await adminDb
       .from('officials')
       .select('*')
       .ilike('name', searchTerm);
+
+    console.log('Query result:', { officials, error });
 
     if (error) throw error;
 
