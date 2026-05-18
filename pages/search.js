@@ -8,18 +8,22 @@ export default function SearchPage() {
   const { q } = router.query;
   const [results, setResults] = useState({ officials: [], bills: [] });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!q) return;
     setLoading(true);
+    setError(null);
     fetch(`/api/search?q=${encodeURIComponent(q)}`)
       .then(r => r.json())
       .then(data => {
-        setResults(data);
+        setResults(data || { officials: [], bills: [] });
         setLoading(false);
       })
       .catch(err => {
         console.error('Search error:', err);
+        setError(err.message);
+        setResults({ officials: [], bills: [] });
         setLoading(false);
       });
   }, [q]);
@@ -29,10 +33,11 @@ export default function SearchPage() {
       <Search />
       <h2>Search Results for "{q}"</h2>
       {loading && <p>Loading...</p>}
-      {!loading && results.officials.length === 0 && results.bills.length === 0 && (
+      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+      {!loading && !error && (results?.officials?.length || 0) === 0 && (results?.bills?.length || 0) === 0 && (
         <p>No results found.</p>
       )}
-      {results.officials.length > 0 && (
+      {(results?.officials?.length || 0) > 0 && (
         <section>
           <h3>Officials ({results.officials.length})</h3>
           {results.officials.map(official => (
