@@ -62,4 +62,22 @@ export default async function handler(req, res) {
     const officials = members.map(mapProPublicaToOfficial);
 
     // Insert with UPSERT to avoid duplicates
-    const {
+    const { data, error } = await adminDb
+      .from('officials')
+      .upsert(officials, { onConflict: 'propublica_id' });
+
+    if (error) {
+      console.error('Insert error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Synced ${officials.length} officials`,
+      count: officials.length
+    });
+  } catch (err) {
+    console.error('Sync error:', err);
+    return res.status(500).json({ error: err.message });
+  }
+}
