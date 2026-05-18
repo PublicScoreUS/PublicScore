@@ -14,17 +14,27 @@ async function fetchProPublicaMembers() {
   const members = [];
   
   try {
+    console.log('Fetching Senate...');
     const res = await fetch('https://api.propublica.org/congress/v1/members/senate/current.json');
     const data = await res.json();
-    if (data.results && data.results[0]) members.push(...data.results[0].members);
+    console.log('Senate response:', JSON.stringify(data).substring(0, 300));
+    if (data.results && data.results[0]) {
+      console.log(`Found ${data.results[0].members.length} senators`);
+      members.push(...data.results[0].members);
+    }
   } catch (err) {
     console.error('Senate fetch error:', err);
   }
 
   try {
+    console.log('Fetching House...');
     const res = await fetch('https://api.propublica.org/congress/v1/members/house/current.json');
     const data = await res.json();
-    if (data.results && data.results[0]) members.push(...data.results[0].members);
+    console.log('House response:', JSON.stringify(data).substring(0, 300));
+    if (data.results && data.results[0]) {
+      console.log(`Found ${data.results[0].members.length} representatives`);
+      members.push(...data.results[0].members);
+    }
   } catch (err) {
     console.error('House fetch error:', err);
   }
@@ -36,7 +46,7 @@ async function sync() {
   try {
     console.log('Fetching ProPublica members...');
     const members = await fetchProPublicaMembers();
-    console.log(`Fetched ${members.length} members`);
+    console.log(`Total fetched: ${members.length} members`);
 
     const officials = members.map(m => ({
       propublica_id: m.id,
