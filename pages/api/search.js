@@ -1,4 +1,4 @@
-import { publicDb } from '../../lib/db';
+import { adminDb } from '../../lib/db';
 
 export default async function handler(req, res) {
   const { q } = req.query;
@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   try {
     const searchTerm = `%${q.toLowerCase()}%`;
     
-    const { data: officials, error } = await publicDb
+    const { data: officials, error } = await adminDb
       .from('officials')
       .select('*')
       .ilike('name', searchTerm);
