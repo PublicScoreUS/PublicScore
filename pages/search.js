@@ -1,3 +1,16 @@
+useEffect(() => {
+  console.log('useEffect running, q =', q, 'isReady =', router.isReady);
+  
+  if (!router.isReady) return;
+  if (!q) return;
+  
+  console.log('About to fetch /api/search');
+  
+  setLoading(true);
+  setError(null);
+  // ... rest of code
+}, [router.isReady, q]);
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
