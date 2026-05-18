@@ -23,6 +23,9 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  console.log('useEffect running, q =', q, 'isReady =', router.isReady);
+   if (!router.isReady) return;
+  
   useEffect(() => {
     if (!q) return;
     setLoading(true);
